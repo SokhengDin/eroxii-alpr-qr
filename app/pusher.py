@@ -19,7 +19,7 @@ def push_manual_exit(plate_number: str) -> None:
 
 def _do_push(plate_number: str) -> None:
     url     = f"{config.AI_BASE_URL.rstrip('/')}/api/v1/manual-exit"
-    payload = {"plate_number": plate_number}
+    payload = {"plate_number": plate_number, "qr_scan": True}
 
     try:
         logger.info(f"[PUSHER] POST {url}  plate_number={plate_number}")
