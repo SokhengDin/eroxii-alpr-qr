@@ -9,10 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 def push_manual_exit(plate_number: str) -> None:
-    """
-    Fire-and-forget push to the AI backend.
-    Runs in a background thread so it never blocks the serial reader.
-    """
     if not config.AI_PUSH_ENABLED:
         logger.debug("[PUSHER] Push disabled — skipping.")
         return

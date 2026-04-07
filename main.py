@@ -5,7 +5,7 @@ import uvicorn
 
 from app.config        import config
 from app.serial_reader import reader_loop
-from app.server        import app  # noqa: F401  — imported for uvicorn
+from app.server        import app
 
 logging.basicConfig(
     level   = logging.INFO,

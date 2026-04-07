@@ -7,8 +7,6 @@ from .config import config
 app = FastAPI(title="USB QR Reader Host Server", version="1.0.0")
 
 
-# ─── routes ──────────────────────────────────────────────────────────────────
-
 @app.get("/")
 def home():
     return {
@@ -29,7 +27,6 @@ def health():
 
 @app.get("/get_qr")
 def get_qr():
-    """Return and consume the latest new scan. Returns empty if nothing new."""
     with state.lock:
         if state.has_new_qr:
             data = {
@@ -51,7 +48,6 @@ def get_qr():
 
 @app.get("/latest")
 def latest():
-    """Return the most recent scan without consuming it."""
     with state.lock:
         return {
             "status"    : "ok",

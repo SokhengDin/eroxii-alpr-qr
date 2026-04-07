@@ -12,11 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 def reader_loop() -> None:
-    """
-    Continuously reads QR codes from the configured serial port.
-    Auto-reconnects on any error.  Valid new scans update shared state
-    and trigger a background push to the AI backend.
-    """
     while True:
         ser = None
         try:
@@ -46,8 +41,6 @@ def reader_loop() -> None:
                 pass
 
 
-# ─── internal ────────────────────────────────────────────────────────────────
-
 def _handle_scan(qr_text: str) -> None:
     now_ts  = time.time()
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -71,5 +64,4 @@ def _handle_scan(qr_text: str) -> None:
 
     logger.info(f"[SERIAL] Scanned #{state.scan_count}: {qr_text}")
 
-    # Push outside the lock — runs in its own daemon thread
     push_manual_exit(qr_text)
