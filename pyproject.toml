@@ -1,0 +1,24 @@
+[project]
+name            = "eroxii-alpr-qr"
+version         = "1.0.0"
+description     = "USB QR scanner host — reads serial port, exposes REST API, pushes scans to AI backend"
+readme          = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "pyserial>=3.5",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+start = "main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[build-system]
+requires      = ["hatchling"]
+build-backend = "hatchling.build"
