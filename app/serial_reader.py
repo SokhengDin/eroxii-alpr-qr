@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from datetime import datetime
 
@@ -9,6 +10,13 @@ from .config  import config
 from .pusher  import push_manual_exit
 
 logger = logging.getLogger(__name__)
+
+_PLATE_RE = re.compile(r"/history/user_([^/?#]+)", re.IGNORECASE)
+
+
+def _extract_plate(qr_text: str) -> str:
+    m = _PLATE_RE.search(qr_text)
+    return m.group(1) if m else qr_text
 
 
 def reader_loop() -> None:
@@ -62,6 +70,7 @@ def _handle_scan(qr_text: str) -> None:
         state.last_qr       = qr_text
         state.last_qr_time  = now_ts
 
-    logger.info(f"[SERIAL] Scanned #{state.scan_count}: {qr_text}")
+    plate = _extract_plate(qr_text)
+    logger.info(f"[SERIAL] Scanned #{state.scan_count}: {qr_text} -> plate={plate}")
 
-    push_manual_exit(qr_text)
+    push_manual_exit(plate)
