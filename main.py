@@ -1,6 +1,9 @@
+import gzip
 import logging
+import shutil
 import threading
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
+from pathlib import Path
 
 import uvicorn
 
@@ -8,12 +11,22 @@ from app.config        import config
 from app.serial_reader import reader_loop
 from app.server        import app
 
-_file_handler = RotatingFileHandler(
-    "app.log",
-    maxBytes    = 5 * 1024 * 1024,
-    backupCount = 3,
+
+def _gz_rotator(source: str, dest: str) -> None:
+    with open(source, "rb") as f_in, gzip.open(dest + ".gz", "wb") as f_out:
+        shutil.copyfileobj(f_in, f_out)
+    Path(source).unlink()
+
+
+_file_handler = TimedRotatingFileHandler(
+    filename    = "app.log",
+    when        = "midnight",
+    interval    = 1,
+    backupCount = 7,
     encoding    = "utf-8",
+    utc         = False,
 )
+_file_handler.rotator  = _gz_rotator
 _file_handler.setFormatter(logging.Formatter(
     fmt     = "%(asctime)s [%(levelname)s] %(message)s",
     datefmt = "%Y-%m-%d %H:%M:%S",
