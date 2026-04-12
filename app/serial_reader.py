@@ -11,7 +11,7 @@ from .pusher  import push_manual_exit
 
 logger = logging.getLogger(__name__)
 
-_PLATE_RE = re.compile(r"/history/([^/?#]+)", re.IGNORECASE)
+_PLATE_RE = re.compile(r"/history/(?:user_|MOTOR_)?([^/?#]+)", re.IGNORECASE)
 
 
 def _extract_plate(qr_text: str) -> str:
