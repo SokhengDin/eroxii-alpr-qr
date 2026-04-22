@@ -11,12 +11,18 @@ from .pusher  import push_manual_exit
 
 logger = logging.getLogger(__name__)
 
-_PLATE_RE = re.compile(r"/history/(?:user_|MOTOR_)?([^/?#]+)", re.IGNORECASE)
+_URL_RE    = re.compile(r"/history/(?:user_|MOTOR_)?([^/?#]+)", re.IGNORECASE)
+_PREFIX_RE = re.compile(r"^(?:user_|MOTOR_)(.+)$", re.IGNORECASE)
 
 
 def _extract_plate(qr_text: str) -> str:
-    m = _PLATE_RE.search(qr_text)
-    return m.group(1) if m else qr_text
+    m = _URL_RE.search(qr_text)
+    if m:
+        return m.group(1)
+    m = _PREFIX_RE.match(qr_text)
+    if m:
+        return m.group(1)
+    return qr_text
 
 
 def reader_loop() -> None:
