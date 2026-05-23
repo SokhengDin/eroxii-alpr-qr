@@ -1,5 +1,5 @@
 import logging
-import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import httpx
 
@@ -7,14 +7,30 @@ from .config import config
 
 logger = logging.getLogger(__name__)
 
+# ── Shared HTTP client (persistent connection pool, keep-alive) ───────────────
+_http_client: httpx.Client | None = None
+
+
+def _get_client() -> httpx.Client:
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.Client(
+            timeout=config.AI_PUSH_TIMEOUT,
+            limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+        )
+    return _http_client
+
+
+# ── Bounded thread pool — at most 4 concurrent pushes, queue up to 20 ────────
+_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="pusher")
+
 
 def push_manual_exit(plate_number: str) -> None:
     if not config.AI_PUSH_ENABLED:
         logger.debug("[PUSHER] Push disabled — skipping.")
         return
 
-    t = threading.Thread(target=_do_push, args=(plate_number,), daemon=True)
-    t.start()
+    _executor.submit(_do_push, plate_number)
 
 
 def _do_push(plate_number: str) -> None:
@@ -24,9 +40,8 @@ def _do_push(plate_number: str) -> None:
     try:
         logger.info(f"[PUSHER] POST {url}  plate_number={plate_number}")
 
-        with httpx.Client(timeout=config.AI_PUSH_TIMEOUT) as client:
-            resp = client.post(url, json=payload)
-            resp.raise_for_status()
+        resp = _get_client().post(url, json=payload)
+        resp.raise_for_status()
 
         logger.info(f"[PUSHER] {resp.status_code} — {resp.text[:200]}")
 

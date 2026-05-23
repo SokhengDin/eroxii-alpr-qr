@@ -30,17 +30,32 @@ def reader_loop() -> None:
         ser = None
         try:
             logger.info(f"[SERIAL] Opening {config.SERIAL_PORT} @ {config.BAUDRATE} baud ...")
-            ser = serial.Serial(config.SERIAL_PORT, config.BAUDRATE, timeout=config.SERIAL_TIMEOUT)
+            ser = serial.Serial(
+                config.SERIAL_PORT,
+                config.BAUDRATE,
+                timeout=config.SERIAL_TIMEOUT,   # read timeout prevents readline() hanging forever
+            )
             logger.info(f"[SERIAL] Connected on {config.SERIAL_PORT}")
 
-            while True:
-                raw = ser.readline()
-                if raw:
-                    qr_text = raw.decode("utf-8", errors="ignore").strip()
-                    if qr_text:
-                        _handle_scan(qr_text)
+            _buf = bytearray()
 
-                time.sleep(0.02)
+            while True:
+                # Read available bytes without blocking indefinitely.
+                # serial.Serial.read() respects the timeout set above.
+                chunk = ser.read(ser.in_waiting or 1)
+
+                if chunk:
+                    _buf.extend(chunk)
+
+                    # Process all complete lines in the buffer
+                    while b"\n" in _buf:
+                        line, _buf = _buf.split(b"\n", 1)
+                        qr_text = line.decode("utf-8", errors="ignore").strip()
+                        if qr_text:
+                            _handle_scan(qr_text)
+                else:
+                    # No data yet — yield CPU instead of spinning
+                    time.sleep(0.02)
 
         except Exception as e:
             logger.error(f"[SERIAL] Error: {e}")
@@ -75,8 +90,9 @@ def _handle_scan(qr_text: str) -> None:
         state.scan_count   += 1
         state.last_qr       = qr_text
         state.last_qr_time  = now_ts
+        scan_count          = state.scan_count   # read under lock
 
     plate = _extract_plate(qr_text)
-    logger.info(f"[SERIAL] Scanned #{state.scan_count}: {qr_text} -> plate={plate}")
+    logger.info(f"[SERIAL] Scanned #{scan_count}: {qr_text} -> plate={plate}")
 
     push_manual_exit(plate)
